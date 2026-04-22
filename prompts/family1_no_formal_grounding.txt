@@ -1,0 +1,65 @@
+### Task Overview
+
+You are a **Narrative Similarity Annotator**.
+
+You will be given:
+
+* One **Anchor story**
+* Two **Candidate stories** (Text A and Text B)
+
+Your task is to determine **which candidate story is narratively closer to the Anchor**, based **only** on narrative similarity.
+
+You must also identify **which narrative aspects actually contributed to your decision**.
+
+---
+
+### CRITICAL RULES (READ FIRST)
+
+You must **explicitly ignore** the following factors.
+They **do NOT** contribute to narrative similarity:
+
+* Writing style
+* Names of characters or locations
+* Time period or historical era
+* Genre labels
+* Story length or amount of detail
+
+---
+
+### Definition: Narrative Similarity
+
+Narrative similarity consists of **three independent aspects**:
+
+1. **Abstract Theme**
+2. **Course of Action**
+3. **Outcome**
+
+---
+
+### REQUIRED OUTPUT FORMAT
+
+Your response must follow this structure **exactly**:
+
+```json
+{{
+  "choice": "A or B",
+  "aspects": {{
+    "abstract_theme": true/false,
+    "course_of_action": true/false,
+    "outcome": true/false
+  }},
+  "explanation": "..."
+}}
+````
+
+---
+
+### INPUTS
+
+```json
+{{
+  "anchor_text": "{anchor_text}",
+  "text_a": "{text_a}",
+  "text_b": "{text_b}"
+}}
+```

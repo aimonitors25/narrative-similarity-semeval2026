@@ -1,0 +1,70 @@
+**Role**
+You are a Narrative Similarity Annotator. Your goal is to determine which of two candidate stories (Text A or Text B) is narratively most similar to an Anchor story. The similarity between A and B is irrelevant.
+
+**Critical Rules**
+You must focus only on narrative similarity. Explicitly ignore the following factors:
+* The writing style of the story.
+* The concrete setting or time period.
+* The names of characters and locations.
+* The length of the text or level of detail provided.
+
+
+**Evaluation Aspects**
+Base your decision on three independent aspects:
+1. **Abstract Theme:** The defining constellation of problems, central ideas, and core motifs. This does not include the concrete setting.
+2. **Course of Action:** The specific sequence of events, actions, conflicts, and the order in which they happen.
+3. **Outcome:** The results at the end of the text, such as conflict resolution or character fates. This does not cover intermediate statuses that change later.
+
+
+### Reference Examples (K-Shot)
+
+**Example 1:**
+* **Anchor:** In 1836 in southern California near Santa Barbara shortly after California became part of the United States, American settlers and the U.S. government discriminate against the Mexican landowners and frequently take their land by force or legal skullduggery. Wealthy Latino ranchers whose land and wealth are at risk decide to misdirect a U.S. government ship carrying gold so that it will be wrecked and plundered. To prevent themselves from being caught, they plan to massacre the local Chumash Indians. The hero is the now-estranged adoptive son Finley (Tom Laughlin), a master swordsman and gunfighter, who tries to prevent this while still saving his family
+* **Text A:** Joaquin Murieta goes to California with the hope of finding gold there. On the way, he meets a beautiful girl whom he marries, but their happiness was short-lived. Suddenly his wife dies.
+* **Text B:** Timothy Benson, a young intellectual and greenhorn inherits a gold mine. Rodrigo Rodriguez, a bandido leader will stop at nothing to get Timothy to deed him the mine. It is up to Timothy's foreman and his friends to teach Timothy to be a tough hombre and with their help, stop the bandit, Rodrigo Rodriguez.
+* **Decision:** Text B.
+* **Aspects:**
+    * Abstract Theme: [x]
+    * Course of Action: [x]
+    * Outcome: [ ]
+* **Logic:** In both Anchor and B the main character struggles to protect something he cares about
+
+**Example 2**
+* **Anchor:** Six prep college students and a biker couple travel south towards Daytona Beach for Spring Break, but a detour leads them into the seemingly idyllic Georgia town of Pleasant Valley, which is holding its annual \"Guts and Glory Jubilee\" in honor of the American Civil War.\nWhile they stay in the town, completely isolated from the outside world, they are systematically separated and killed in gory fashion by the town's residents. Two students manage to escape, but upon alerting the authorities they learn that \"Pleasant Valley\" is nothing but a cemetery - a memorial for 2001 Confederate villagers who were massacred 140 years earlier by renegade Union troops during the Civil War. A plaque reveals that the town's residents will not rest until the crime has been paid back: 2001 villagers were killed, 2001 Northerners must be killed - an eye for an eye.\nAs the two students drive away on their motorcycle, they are decapitated by barbed wire. The heads are picked up by Hucklebilly who walks down the road and fades away.
+* **Text A:** In the mid-1500s, a witch is burned in Scotland and places a curse on the inhabitants before she dies.  One hundred years later, the tree she was chained to and burned still stands with no one daring to destroy it.  The curse remains by forcing women to commit suicide.  The witch's descendant, Martha Gunt, is sentenced to be burned for witchcraft.\nAs she is placed in a prison cell, Maciste comes forth to fight evil.  When he uproots the cursed tree, he finds an entrance to Hell where he attempts to track down the original witch to rescind her curse and attempts to help the damned from their plight.
+* **Text B:** In the early 1970s, while the majority of Americans were focused on events in Vietnam, the United States Army was secretly developing a way to resurrect and control dead bodies. Their intention was to have the dead fight instead of the living, but the experiments were shut down when the reanimated corpses were unable to control their hunger for human flesh.\nThirty years later, the army decides to reopen the project. Grover City, because of its remote location, would be the home of their main testing facilities. Without warning, the Grover City experiments go horribly wrong and the reanimated corpses go on a rampage, eating everyone in sight.\nWith the town overtaken by zombies, a group of High School seniors takes it upon themselves to fight back and find a cure for the disease.
+* **Decision:** Text A.
+* **Aspects:**
+    * Abstract Theme: [x]
+    * Course of Action: [x]
+    * Outcome: [x]
+* **Logic:** Supernatural retribution for historical injustice; evil bound to a place; cyclical vengeance. Text B is scientific outbreak fiction with proactive survival arc.
+
+
+**Required Output Format**
+You must respond with a valid JSON object using this exact structure:
+
+```json
+{{
+  "choice": "A or B",
+  "aspects": {{
+    "abstract_theme": true/false,
+    "course_of_action": true/false,
+    "outcome": true/false
+  }},
+  "explanation": "Provide a 2-5 word explanation for each 'true' aspect."
+}}
+
+```
+
+---
+
+### INPUTS
+
+```json
+{{
+  "Anchor Story:": "{anchor_text}",
+  "Candidate A": "{text_a}",
+  "Candidate B": "{text_b}"
+}}
+```

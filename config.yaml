@@ -1,0 +1,154 @@
+# config.yaml — AI-Monitors SemEval-2026 Task 4 Configuration
+# -----------------------------------------------------------------
+# This file defines models, prompts, and experiment combinations
+# for the narrative similarity pipeline.
+#
+# Usage:
+#   python run_embedding.py --model <model_name> --data <data_file> --output <output_file>
+#   python run_llm.py --model <model_name> --data <data_file> --prompt <prompt_file> --output <output_file>
+
+models:
+  gpt-5-mini:
+    type: azure_openai
+    deployment: gpt-5-mini-2025-08-07
+    api_version: 2025-04-01-preview
+    env_vars:
+      - AZURE_OPENAI_API_KEY
+      - AZURE_OPENAI_ENDPOINT
+      - AZURE_OPENAI_DEPLOYMENT
+      - AZURE_OPENAI_API_VERSION
+    script: run_llm.py
+    llm_model: true
+
+  deepseek-r1:32b:
+    type: ollama
+    model: deepseek-r1:32b
+    script: run_llm.py
+    llm_model: true
+
+  llama3.1:8b:
+    type: ollama
+    model: llama3.1:8b
+    script: run_llm.py
+    llm_model: true
+
+  qwen2.5vl:7b:
+    type: ollama
+    model: qwen2.5vl:7b
+    script: run_llm.py
+    llm_model: true
+
+  t5-xxl:
+    type: transformers
+    model: sentence-transformers/sentence-t5-xxl
+    local_path: models/sentence-t5-xxl
+    script: run_embedding.py
+    embedding_model: true
+
+  qwen3-embedding:8b:
+    type: ollama
+    model: qwen3-embedding:8b
+    script: run_embedding.py
+    embedding_model: true
+
+  story-emb:
+    type: transformers
+    model: uhhlt/story-emb
+    local_path: models/story-emb
+    script: run_embedding.py
+    embedding_model: true
+
+prompts:
+  family1_no_formal_grounding:
+    file: prompts/family1_no_formal_grounding.txt
+    description: Zero-shot baseline prompt
+
+  family2_aspect_grounded:
+    file: prompts/family2_aspect_grounded.txt
+    description: Aspect-grounded prompt with annotation guidelines
+
+  family3_kshot:
+    file: prompts/family3_kshot.txt
+    description: K-shot prompt with neutral label
+
+experiments:
+  # Embedding baselines (H1)
+  00_story_emb:
+    model: story-emb
+    prompt: null
+    description: Story-emb embedding baseline (55.0% dev)
+    data: data/Track_A/dev_triples.jsonl
+    output: results/dev_story_emb.jsonl
+
+  01_qwen3_emb:
+    model: qwen3-embedding:8b
+    prompt: null
+    description: Qwen3-embedding baseline (63.5% dev)
+    data: data/Track_A/dev_triples.jsonl
+    output: results/dev_qwen3_emb.jsonl
+
+  02_t5_xxl_emb:
+    model: t5-xxl
+    prompt: null
+    description: T5-XXL embedding baseline (71.0% dev)
+    data: data/Track_A/dev_triples.jsonl
+    output: results/dev_t5_xxl.jsonl
+
+  # LLM experiments (H2 + H3)
+  family1_no_formal_grounding_gpt:
+    model: gpt-5-mini
+    prompt: family1_no_formal_grounding
+    description: Family 1 (zero-shot) on GPT-5-mini
+    data: data/Track_A/dev_triples.jsonl
+    output: results/dev_gpt_zero_shot.jsonl
+
+  family2_aspect_grounded_gpt:
+    model: gpt-5-mini
+    prompt: family2_aspect_grounded
+    description: Family 2 (aspect-grounded) on GPT-5-mini
+    data: data/Track_A/dev_triples.jsonl
+    output: results/dev_gpt_aspect_grounded.jsonl
+
+  family3_kshot_gpt:
+    model: gpt-5-mini
+    prompt: family3_kshot
+    description: Family 3 (k-shot neutral label) on GPT-5-mini (77.5% dev)
+    data: data/Track_A/dev_triples.jsonl
+    output: results/dev_gpt_kshot.jsonl
+
+  family3_kshot_deepseek:
+    model: deepseek-r1:32b
+    prompt: family3_kshot
+    description: Family 3 (k-shot neutral label) on DeepSeek-R1 (73.7% dev)
+    data: data/Track_A/dev_triples.jsonl
+    output: results/dev_deepseek_kshot.jsonl
+
+  # LLaMA with different prompts
+  family3_kshot_llama:
+    model: llama3.1:8b
+    prompt: family3_kshot
+    description: Family 3 (k-shot neutral label) on LLaMA (58.5% dev)
+    data: data/Track_A/dev_triples.jsonl
+    output: results/dev_llama_kshot.jsonl
+
+  # Qwen with different prompts
+  family3_kshot_qwen:
+    model: qwen2.5vl:7b
+    prompt: family3_kshot
+    description: Family 3 (k-shot neutral label) on Qwen (67.0% dev)
+    data: data/Track_A/dev_triples.jsonl
+    output: results/dev_qwen_kshot.jsonl
+
+# Default data paths
+data:
+  dev: data/Track_A/dev_triples.jsonl
+  test: data/Track_A/test_triples.jsonl
+  sample: data/Track_A/sample_triples.jsonl
+
+# Output directory
+output_dir: results/
+
+# Environment settings
+env:
+  device: cuda  # or cpu
+  ollama_host: http://localhost:11434

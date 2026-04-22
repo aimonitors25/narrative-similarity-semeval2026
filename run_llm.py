@@ -102,7 +102,7 @@ def write_jsonl(f, obj):
 # MODEL CALLERS (MINIMAL LOGIC)
 # =========================================================
 
-def ollama_client(model_name, host, timeout=300):
+def ollama_client(model_name, host, timeout=1200):
     def call(prompt):
         r = requests.post(
             f"{host}/api/generate",

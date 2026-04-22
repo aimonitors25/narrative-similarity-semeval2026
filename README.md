@@ -68,6 +68,9 @@ ai-monitors-semeval2026-task4/
 ├── run_embedding.py               # Unified embedding inference for all models
 ├── run_llm.py                     # Unified LLM inference for all models
 │
+├── scripts/                       # Automation and utilities
+│   └── run_experiment.py          # Automated experiment runner (recommended)
+│
 ├── data/
 │   └── Track_A/
 │       ├── dev_triples.jsonl       # 200 annotated triples (text_a_is_closer bool)
@@ -114,22 +117,51 @@ Edit `config.yaml` to configure your models and API keys. The file supports:
 
 ### Running Experiments
 
-#### Embedding Baselines (H1)
+#### Automated Experiment Runner (Recommended)
+
+Use `scripts/run_experiment.py` to run pre-configured experiments from `config.yaml`:
+
+```bash
+# List all available experiments
+python scripts/run_experiment.py --list
+
+# Run a specific experiment
+python scripts/run_experiment.py --experiment 02_t5_xxl_emb --data dev
+
+# Run with different dataset
+python scripts/run_experiment.py --experiment family3_kshot_gpt --data sample
+
+# Preview command without executing (dry run)
+python scripts/run_experiment.py --experiment family3_kshot_gpt --dry_run
+
+# Run all experiments on sample data (quick test)
+python scripts/run_experiment.py --experiment all --data sample
+```
+
+**Available experiments** (shown by `--list`):
+- **[H1] Embedding Baselines**: `00_story_emb`, `01_qwen3_emb`, `02_t5_xxl_emb`
+- **[H2-H3] LLM Experiments**: `family1_no_formal_grounding_gpt`, `family2_aspect_grounded_gpt`, `family3_kshot_gpt`, `family3_kshot_deepseek`, `family3_kshot_llama`, `family3_kshot_qwen`
+
+#### Direct Command Usage (Advanced)
+
+For manual control, run scripts directly:
+
+**Embedding Baselines (H1)**
 ```bash
 # Run T5-XXL embedding on dev set
 python run_embedding.py \
-    --model sentence-transformers/sentence-t5-xxl \
+    --model t5-xxl \
     --data data/Track_A/dev_triples.jsonl \
     --output results/dev_t5_xxl.jsonl
 
 # Run Story-Emb on sample data
 python run_embedding.py \
-    --model uhhlt/story-emb \
+    --model story-emb \
     --data data/Track_A/sample_triples.jsonl \
     --output results/sample_story_emb.jsonl
 ```
 
-#### LLM Inference (H2 + H3)
+**LLM Inference (H2 + H3)**
 ```bash
 # Run GPT-5-mini with k-shot prompting
 python run_llm.py \
@@ -138,15 +170,16 @@ python run_llm.py \
     --prompt prompts/family3_kshot.txt \
     --output results/dev_gpt.jsonl
 
-# Run DeepSeek-R1 with zero-shot
+# Run DeepSeek-R1 with aspect-grounded prompts
 python run_llm.py \
     --model deepseek-r1:32b \
     --data data/Track_A/dev_triples.jsonl \
-    --prompt prompts/family1_no_formal_grounding.txt \
+    --prompt prompts/family2_aspect_grounded.txt \
     --output results/dev_deepseek.jsonl
 ```
 
 #### Ensemble Construction (H4)
+
 ```bash
 # Analyze complementarity between models
 python ensemble/complementarity.py \
@@ -211,7 +244,7 @@ export AZURE_OPENAI_ENDPOINT="your-endpoint"
 
 ---
 
-## Future Work
+<!-- ## Future Work
 
 We plan to extend this work with:
 - **Contrastive Learning**: Fine-tuning embedding models with contrastive objectives for better narrative similarity
@@ -247,7 +280,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
     └── test_ensemble.jsonl        ← official submission file
 ```
 
----
+--- -->
 
 ## Setup
 
@@ -375,10 +408,10 @@ python scripts/run_experiment.py --experiment 02_t5_xxl_emb --data dev
 
 ```bash
 # Run best configurations for each model
-python scripts/run_experiment.py --experiment 14_K-shot_gpt --data dev
-python scripts/run_experiment.py --experiment 06_K-shot_deepseek --data dev
+python scripts/run_experiment.py --experiment family3_kshot_gpt --data dev
+python scripts/run_experiment.py --experiment family3_kshot_deepseek --data dev
 
-# Or run all LLM experiments
+# Run all experiments (embedding + LLM)
 python scripts/run_experiment.py --experiment all --data dev
 ```
 

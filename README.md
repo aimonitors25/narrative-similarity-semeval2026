@@ -61,7 +61,7 @@ Complementarity-Driven Ensemble (H4)
 ## Repository Structure
 
 ```
-ai-monitors-semeval2026-task4/
+narrative-similarity-semeval2026/
 │
 ├── CITATION.cff                   # Citation metadata for the project
 ├── LICENSE                        # MIT License

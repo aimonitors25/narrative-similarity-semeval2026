@@ -63,34 +63,47 @@ Complementarity-Driven Ensemble (H4)
 ```
 ai-monitors-semeval2026-task4/
 │
+├── CITATION.cff                   # Citation metadata for the project
+├── LICENSE                        # MIT License
+├── README.md                      # This file
 ├── config.yaml                    # All experiment & model configurations
 ├── requirements.txt               # Python dependencies
 ├── run_embedding.py               # Unified embedding inference for all models
 ├── run_llm.py                     # Unified LLM inference for all models
 │
+├── data/                          # Dataset directory
+│   └── Track_A/
+│       ├── dev_triples.jsonl      # 200 annotated triples (text_a_is_closer bool)
+│       ├── test_triples.jsonl     # 400 triples (no ground truth)
+│       └── sample_triples.jsonl   # 5 example triples for quick testing
+│
+├── models/                        # Pre-trained model checkpoints
+│   ├── sentence-t5-xxl/           # Sentence-T5-XXL embedding model
+│   │   ├── config.json
+│   │   ├── model.safetensors
+│   │   ├── tokenizer_config.json
+│   │   └── ...
+│   └── story-emb/                 # Story-Embedding model
+│       ├── config.json
+│       ├── model.safetensors
+│       ├── tokenizer.model
+│       └── ...
+│
+├── prompts/                       # LLM prompt templates (H2 + H3)
+│   ├── family1_no_formal_grounding.txt   # Zero-shot baseline prompt
+│   ├── family2_aspect_grounded.txt       # Aspect-grounded prompt with guidelines
+│   └── family3_kshot.txt                 # K-shot prompt with neutral examples
+│
+├── ensemble/                      # Ensemble methods (H4)
+│   ├── complementarity.py         # Agreement rate analysis for ensemble
+│   └── majority_vote.py           # 3-way majority vote ensemble combiner
+│
 ├── scripts/                       # Automation and utilities
 │   └── run_experiment.py          # Automated experiment runner (recommended)
 │
-├── data/
-│   └── Track_A/
-│       ├── dev_triples.jsonl       # 200 annotated triples (text_a_is_closer bool)
-│       ├── test_triples.jsonl      # 400 triples (no ground truth)
-│       └── sample_triples.jsonl    # 5 example triples for quick testing
-│
-├── models/                        # Pre-trained models (embeddings & LLMs)
-│   ├── sentence-t5-xxl/           # Sentence-T5-XXL embedding model
-│   └── story-emb/                  # Story embedding model
-│
-├── prompts/                       # Prompt templates (H2 + H3)
-│   ├── family1_no_formal_grounding.txt      # Zero-shot baseline prompt
-│   ├── family2_aspect_grounded.txt # Aspect-grounded prompt with guidelines
-│   └── family3_kshot.txt          # K-shot prompt with neutral label
-│
-├── ensemble/                      # H4 — ensemble construction
-│   ├── complementarity.py         # Agreement rate analysis for ensemble
-│   └── majority_vote.py           # 3-way majority vote ensemble
-│
-└── results/                       # Output predictions (empty initially)
+└── results/                       # Output predictions (populated after running)
+    ├── dev_*.jsonl                # Development set predictions
+    └── test_*.jsonl               # Test set predictions
 ```
 
 ---
@@ -101,19 +114,34 @@ ai-monitors-semeval2026-task4/
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/ai-monitors-semeval2026-task4.git
-cd ai-monitors-semeval2026-task4
+git clone https://github.com/aimonitors25/narrative-similarity-semeval2026.git
+cd narrative-similarity-semeval2026
 
 # Install dependencies
 pip install -r requirements.txt
 ```
 
-### Configuration
+### Setup & Configuration
 
-Edit `config.yaml` to configure your models and API keys. The file supports:
-- Azure OpenAI models (GPT-5-mini)
-- Ollama models (DeepSeek-R1, LLaMA, Qwen)
-- Hugging Face transformers (T5-XXL, Story-Emb)
+**For Azure OpenAI (GPT-5-mini):**
+```bash
+export AZURE_OPENAI_API_KEY="your-api-key"
+export AZURE_OPENAI_ENDPOINT="your-endpoint"
+export AZURE_OPENAI_DEPLOYMENT="gpt-5-mini-2025-08-07"
+export AZURE_OPENAI_API_VERSION="2025-04-01-preview"
+```
+
+**For Ollama Local Models:**
+
+1. [Install Ollama](https://ollama.com)
+2. Pull required models:
+   ```bash
+   ollama pull deepseek-r1:32b
+   ollama pull llama3.1:8b
+   ollama pull qwen2.5vl:7b
+   ollama pull qwen3-embedding:8b
+   ```
+3. Ensure Ollama is running: `ollama serve`
 
 ### Running Experiments
 
@@ -195,369 +223,176 @@ python ensemble/majority_vote.py \
 
 ---
 
-## Data Format
+## Core Scripts
 
-The dataset consists of JSONL files with the following structure:
+### [run_embedding.py](run_embedding.py)
+Unified embedding inference script for all embedding models.
 
-```json
-{
-  "anchor_text": "Story text for the anchor narrative...",
-  "text_a": "First candidate story...",
-  "text_b": "Second candidate story...",
-  "text_a_is_closer": true  // true if A is closer to anchor, false if B
-}
+**Usage:**
+```bash
+python run_embedding.py --model <model_name> --data <input_file> --output <output_file>
 ```
 
-- `anchor_text`: The reference story
-- `text_a` & `text_b`: Two candidate stories to compare
-- `text_a_is_closer`: Ground truth label (only in dev set)
+**Supported Models:** `t5-xxl`, `story-emb`, `qwen3-embedding:8b`
+
+### [run_llm.py](run_llm.py)
+Unified LLM inference script for all language models.
+
+**Usage:**
+```bash
+python run_llm.py --model <model_name> --data <input_file> --prompt <prompt_file> --output <output_file>
+```
+
+**Supported Models:** `gpt-5-mini`, `deepseek-r1:32b`, `llama3.1:8b`, `qwen2.5vl:7b`
+
+### [scripts/run_experiment.py](scripts/run_experiment.py)
+Automation runner that executes pre-configured experiments from `config.yaml`.
+
+**Key Features:**
+- Lists all available experiments: `--list`
+- Runs single or multiple experiments: `--experiment <name>`
+- Supports different data splits: `--data dev|test|sample`
+- Dry-run mode to preview commands: `--dry_run`
+
+### [ensemble/majority_vote.py](ensemble/majority_vote.py)
+Constructs 3-way majority vote ensemble from individual model predictions.
+
+**Usage:**
+```bash
+python ensemble/majority_vote.py --predictions <file1> <file2> <file3> --output <output_file>
+```
+
+### [ensemble/complementarity.py](ensemble/complementarity.py)
+Analyzes agreement rates between models to identify complementarity.
+
+**Usage:**
+```bash
+python ensemble/complementarity.py --baseline <file1> --llm <file2> <file3> --data <data_file>
+```
 
 ---
 
-## Configuration Details
+## Configuration
+
+Edit `config.yaml` to configure your models and API keys. The file supports:
+- Azure OpenAI models (GPT-5-mini)
+- Ollama models (DeepSeek-R1, LLaMA, Qwen)
+- Hugging Face transformers (T5-XXL, Story-Emb)
 
 ### Models
 
-The `config.yaml` file defines supported models:
+Seven models are supported across embedding and LLM categories:
 
-- **Embeddings**: sentence-t5-xxl, story-emb, qwen3-embedding
-- **LLMs**: gpt-5-mini (Azure), deepseek-r1:32b (Ollama), llama3.1:8b (Ollama), qwen2.5vl:7b (Ollama)
+**Embedding Models** (for H1 baseline):
+- `sentence-t5-xxl` - Sentence Transformers T5-XXL (71.0% dev accuracy) ← Best embedding baseline
+- `story-emb` - Story-specific embedding model (55.0% dev accuracy)
+- `qwen3-embedding:8b` - Qwen3 embedding via Ollama (63.5% dev accuracy)
+
+**LLM Models** (for H2-H3 prompting):
+- `gpt-5-mini` - Azure OpenAI GPT-5-mini (requires API key)
+- `deepseek-r1:32b` - DeepSeek R1 via Ollama (best open-source reasoning)
+- `llama3.1:8b` - LLaMA 3.1 8B via Ollama
+- `qwen2.5vl:7b` - Qwen 2.5 Vision-Language 7B via Ollama
 
 ### Prompts
 
-Three prompt families are included:
-- `family1_no_formal_grounding.txt`: Basic zero-shot prompting
-- `family2_aspect_grounded.txt`: Includes annotation guidelines
-- `family3_kshot.txt`: K-shot with neutral examples
+Three prompt families are included in `prompts/`:
 
-### Environment Variables
+| Family | File | Description | Dev Accuracy |
+|--------|------|-------------|--------------|
+| Family 1 | `family1_no_formal_grounding.txt` | Zero-shot baseline (H2) | ~66% |
+| Family 2 | `family2_aspect_grounded.txt` | Aspect-grounded with annotation guidelines (H2) | ~70% |
+| Family 3 | `family3_kshot.txt` | K-shot with neutral examples + label sensitivity (H3) | ~77% |
 
-Set the following for API access:
-```bash
-# Azure OpenAI (for GPT models)
-export AZURE_OPENAI_API_KEY="your-key"
-export AZURE_OPENAI_ENDPOINT="your-endpoint"
+### Experiments
 
-# Ollama (for local models)
-# Ensure Ollama is running with required models
+Pre-configured experiments in `config.yaml` combine models with prompts:
+
+```yaml
+# Embedding Baselines (H1)
+00_story_emb           # Story-emb baseline
+01_qwen3_emb           # Qwen3-embedding baseline
+02_t5_xxl_emb          # T5-XXL baseline ← Best embedding
+
+# LLM Experiments (H2-H3)
+family1_no_formal_grounding_gpt      # GPT-5-mini with Family 1 prompt
+family2_aspect_grounded_gpt          # GPT-5-mini with Family 2 prompt
+family3_kshot_gpt                    # GPT-5-mini with Family 3 prompt
+family3_kshot_deepseek               # DeepSeek with Family 3 prompt
+family3_kshot_llama                  # LLaMA 3.1 with Family 3 prompt
+family3_kshot_qwen                   # Qwen 2.5 with Family 3 prompt
+
+# Ensemble (H4)
+ensemble_majority_vote               # 3-way majority vote
+```
+
+## Support & Questions
+
+For questions about the code, experiments, or methodology, please open an issue on GitHub or contact the AI-Monitors team.
+
+## Data Format
+
+**Input Format (dev/test sets)** — JSONL files:
+
+```json
+{
+  "anchor_text": "The reference story...",
+  "text_a": "First candidate story...",
+  "text_b": "Second candidate story...",
+  "text_a_is_closer": true
+}
+```
+
+**Output Format** — All predictions are returned as JSONL with added fields:
+
+```json
+{
+  "anchor_text": "The reference story...",
+  "text_a": "First candidate story...",
+  "text_b": "Second candidate story...",
+  "text_a_is_closer": true,
+  "prediction": true,
+  "confidence": 0.92
+}
 ```
 
 ---
 
-<!-- ## Future Work
+## Key Insights
 
-We plan to extend this work with:
-- **Contrastive Learning**: Fine-tuning embedding models with contrastive objectives for better narrative similarity
-- Additional ensemble methods
-- Cross-domain evaluation
+**H1 — Embedding Ceiling**  
+Sentence-T5-XXL achieves 71.0% dev accuracy, but all embedding models plateau below structured LLM prompting, confirming that dense embeddings lack explicit narrative reasoning.
+
+**H2 — Aspect-Grounded Prompting**  
+Adding official annotation guidelines to prompts improves GPT-5-mini from ~70% to 77.4% (+7% gain).
+
+**H3 — Label Sensitivity**  
+Changing example labels from `EXAMPLE` to `HARD EXAMPLE` decreases accuracy by 5.6 points, showing how evaluative language primes model reasoning.
+
+**H4 — Complementarity > Accuracy**  
+The 3-way ensemble outperforms individual systems by combining complementary strengths: disagreement on 30-40% of instances reveals where each model excels.
+
+
+
+<!-- 
 
 ---
-
 ## Citation
 
-If you use this code, please cite our SemEval-2026 submission:
+If you use this code in your research, please cite our SemEval-2026 submission:
 
 ```bibtex
 @inproceedings{ai-monitors-semeval2026,
   title={AI-Monitors at SemEval-2026 Task 4: A Hybrid Embedding and LLM Ensemble for Narrative Similarity},
-  author={Your Name et al.},
-  booktitle={Proceedings of SemEval},
+  author={AI-Monitors Team},
+  booktitle={Proceedings of SemEval-2026},
   year={2026}
 }
-```
+``` -->
+
 
 ---
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-├── analysis/                      # ablation studies
-│   ├── label_priming.py           # HARD EXAMPLE vs EXAMPLE → Table 4 (+5.6 pts)
-│   └── generalization_gap.py      # dev→test gap analysis → Section 4.7
-│
-└── results/                       # all prediction outputs (.jsonl)
-    ├── dev_*.jsonl
-    └── test_ensemble.jsonl        ← official submission file
-```
-
---- -->
-
-## Setup
-
-```bash
-git clone https://github.com/your-username/ai-monitors-semeval2026-task4.git
-cd ai-monitors-semeval2026-task4
-pip install -r requirements.txt
-```
-
-For models run via Ollama (qwen3-embedding, DeepSeek, LLaMA, Qwen):
-```bash
-# Install Ollama: https://ollama.com
-ollama pull qwen3-embedding:8b
-ollama pull deepseek-r1:32b
-ollama pull llama3.1:8b
-ollama pull qwen2.5vl:7b
-```
-
-For GPT-5-mini via Azure OpenAI, set environment variables in `.env`:
-```
-AZURE_OPENAI_API_KEY=...
-AZURE_OPENAI_ENDPOINT=...
-AZURE_OPENAI_DEPLOYMENT=gpt-5-mini-2025-08-07
-AZURE_OPENAI_API_VERSION=2025-04-01-preview
-```
-
----
-
-## Quickstart
-
-### Automated Experiment Runner
-
-All experiments are configured in `config.yaml` and run through a unified interface:
-
-```bash
-# List all available experiments
-python scripts/run_experiment.py --list
-
-# Run a specific experiment on dev data
-python scripts/run_experiment.py --experiment 14_K-shot_gpt --data dev
-
-# Run all experiments on sample data (quick test)
-python scripts/run_experiment.py --experiment all --data sample
-
-# Dry run to preview commands
-python scripts/run_experiment.py --experiment 14_K-shot_gpt --dry_run
-```
-
-**Key Features:**
-- **Single unified script** for all LLM models (GPT, DeepSeek, LLaMA, Qwen)
-- **Model-agnostic**: Switch models by just changing the experiment name
-- **Config-driven**: All combinations defined in `config.yaml`
-- **Easily extensible**: Add new models/prompts by editing `config.yaml`
-
-### Available Experiments
-
-| Category | Experiment | Model | Type | Dev Acc. |
-|---|---|---|---|---|
-| **Embedding (H1)** | `00_story_emb` | Story-emb | embedding | 55.0% |
-| | `01_qwen3_emb` | Qwen3-embedding | embedding | 63.5% |
-| | `02_t5_xxl_emb` | T5-XXL | embedding | 71.0% |
-| **LLM (H2+H3)** | `14_K-shot_gpt` | GPT-5-mini | LLM | 77.5% |
-| | `06_K-shot_gpt` | GPT-5-mini | LLM | ~74% |
-| | `family3_kshot_gpt` | GPT-5-mini | LLM | 77.5% |
-| | `06_K-shot_deepseek` | DeepSeek-R1 | LLM | ~73% |
-| | `family3_kshot_deepseek` | DeepSeek-R1 | LLM | 73.7% |
-| | `family3_kshot_llama` | LLaMA-3.1 | LLM | 58.5% |
-| | `family3_kshot_qwen` | Qwen2.5vl | LLM | 67.0% |
-
-### Manual Inference (Advanced)
-
-**For LLM models**, use `run_llm.py`:
-
-```bash
-# GPT-5-mini with custom prompt
-python run_llm.py \
-    --model gpt-5-mini \
-    --data data/Track_A/dev_triples.json \
-    --prompt prompts/14_K-shot_example.txt \
-    --output results/my_output.jsonl
-
-# DeepSeek-R1 with custom prompt
-python run_llm.py \
-    --model deepseek-r1:32b \
-    --data data/Track_A/dev_triples.json \
-    --prompt prompts/06_K-shot_llm_examples.txt \
-    --output results/my_output.jsonl
-```
-
-**For embedding models**, use `run_embedding.py`:
-
-```bash
-# T5-XXL embedding
-python run_embedding.py \
-    --model t5-xxl \
-    --data data/Track_A/dev_triples.json \
-    --output results/my_output.jsonl
-
-# Qwen3-embedding via Ollama
-python run_embedding.py \
-    --model qwen3-embedding:8b \
-    --data data/Track_A/dev_triples.json \
-    --output results/my_output.jsonl
-
-# Story-emb with prefix strategy experimentation
-python run_embedding.py \
-    --model story-emb \
-    --data data/Track_A/dev_triples.json \
-    --output results/my_output.jsonl \
-    --mode experiment
-```
-
-### Step-by-Step Reproducibility
-
-#### Step 1 — Embedding baselines (H1)
-
-```bash
-# Run all embedding baselines
-python scripts/run_experiment.py --experiment 00_story_emb --data dev
-python scripts/run_experiment.py --experiment 01_qwen3_emb --data dev
-python scripts/run_experiment.py --experiment 02_t5_xxl_emb --data dev
-```
-
-#### Step 2 — LLM inference (H2 + H3)
-
-```bash
-# Run best configurations for each model
-python scripts/run_experiment.py --experiment family3_kshot_gpt --data dev
-python scripts/run_experiment.py --experiment family3_kshot_deepseek --data dev
-
-# Run all experiments (embedding + LLM)
-python scripts/run_experiment.py --experiment all --data dev
-```
-
-#### Step 3 — Ensemble (H4)
-
-```bash
-# Complementarity analysis
-python ensemble/complementarity.py \
-    --baseline results/dev_00_t5_xxl_embedding.jsonl \
-    --models results/dev_14_K-shot_gpt.jsonl results/dev_06_K-shot_deepseek.jsonl \
-    --data data/Track_A/dev_triples.json
-
-# Majority vote
-python ensemble/majority_vote.py \
-    --inputs results/dev_00_t5_xxl_embedding.jsonl results/dev_14_K-shot_gpt.jsonl results/dev_06_K-shot_deepseek.jsonl \
-    --data data/Track_A/dev_triples.json \
-    --output results/dev_ensemble.jsonl
-```
-
-### Configuration System
-
-#### Adding a New Model
-
-Edit `config.yaml`:
-
-**For LLM models:**
-```yaml
-models:
-  my-llm-model:
-    type: ollama  # or azure_openai
-    model: my-llm-model:7b
-    script: run_llm.py
-    llm_model: true
-```
-
-**For embedding models:**
-```yaml
-models:
-  my-embedding-model:
-    type: transformers  # or ollama
-    model: my-org/my-embedding-model
-    script: run_embedding.py
-    embedding_model: true
-```
-
-#### Adding a New Prompt
-
-```yaml
-prompts:
-  my_prompt:
-    file: prompts/my_prompt.txt
-    description: My custom prompt
-```
-
-#### Adding a New Experiment
-
-**For LLM experiments:**
-```yaml
-experiments:
-  my_exp:
-    model: my-llm-model
-    prompt: my_prompt
-    description: My LLM experiment
-```
-
-**For embedding experiments (with optional strategy args):**
-```yaml
-experiments:
-  my_emb_exp:
-    model: my-embedding-model
-    prompt: null
-    description: My embedding experiment
-    embedding_args:
-      mode: run
-      strategy: none
-```
-
-Then run:
-```bash
-python scripts/run_experiment.py --experiment my_exp --data dev
-```
-
----
-
-## Key Findings
-
-**H1 — Embedding ceiling confirmed.**
-sentence-t5-xxl achieves 71.0% dev accuracy — the strongest embedding baseline —
-but all three embedding models plateau below what structured LLM prompting achieves,
-confirming that dense embeddings lack explicit narrative reasoning mechanisms.
-
-**H2 — Aspect-grounded prompting works.**
-Adding official annotation guideline definitions to the prompt improves GPT-5-mini
-from 70.5% to 77.4% — a gain of +6.9 points over unguided zero-shot.
-
-**H3 — A single word matters.**
-Labelling a demonstration `HARD EXAMPLE` instead of `EXAMPLE` drops accuracy by
-5.6 points. Evaluative descriptors prime the model to treat the example as atypical,
-suppressing its reasoning signal during inference.
-
-**H4 — Complementarity beats accuracy-only selection.**
-GPT-5-mini (77.5%) and DeepSeek-R1:32b (73.7%) agree with the t5-xxl baseline on
-only 67.0% and 61.5% of instances — meaning they recover cases where the baseline
-fails. Majority voting over these three produces the strongest overall system.
-
----
-
-## Data Format
-
-**Dev set** (`.jsonl`, one record per line):
-```json
-{
-  "anchor_text": "...",
-  "text_a": "...",
-  "text_b": "...",
-  "text_a_is_closer": true
-}
-```
-
-**Test set** (`.jsonl`, one record per line):
-```json
-{
-  "index": 1,
-  "anchor_text": "...",
-  "text_a": "...",
-  "text_b": "..."
-}
-```
-
-All scripts in this repo accept both formats automatically.
-
----
-
-## Citation
-
-```bibtex
-@inproceedings{aimonitors-semeval2026-task4,
-  title     = {AI-Monitors at SemEval-2026 Task 4: A Hybrid Embedding and LLM Ensemble for Narrative Similarity},
-  booktitle = {Proceedings of the 20th International Workshop on Semantic Evaluation (SemEval-2026)},
-  year      = {2026},
-  address   = {San Diego, CA, USA}
-}
-```
-
----
-
-## License
-
-Code released under MIT. Prompt templates and sample data released under CC BY 4.0.

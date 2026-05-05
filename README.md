@@ -26,7 +26,7 @@ Embedding Baseline (H1)
       ↓
 Aspect-Grounded Prompting (H2)
       ↓
-K-Shot Demonstrations + Label Sensitivity (H3)
+K-Shot Demonstrations + Label Sensitivity (H3)  # Includes controlled label priming experiment
       ↓
 Complementarity-Driven Ensemble (H4)
 ```
@@ -56,6 +56,8 @@ Complementarity-Driven Ensemble (H4)
 | **Ensemble (ours)** | **81.0%** | **75.0%** |
 | Human annotator ceiling | — | ~78.0% |
 
+
+**Key observation:** A simple change in demonstration label ("EXAMPLE" → "HARD EXAMPLE") yields a +3% accuracy gain, highlighting sensitivity to prompt framing.
 ---
 
 ## Repository Structure
@@ -92,7 +94,7 @@ narrative-similarity-semeval2026/
 ├── prompts/                       # LLM prompt templates (H2 + H3)
 │   ├── family1_no_formal_grounding.txt   # Zero-shot baseline prompt
 │   ├── family2_aspect_grounded.txt       # Aspect-grounded prompt with guidelines
-│   └── family3_kshot.txt                 # K-shot prompt with neutral examples
+│   └── family3_kshot.txt                 # K-shot prompt (supports both neutral and evaluative label variants)
 │
 ├── ensemble/                      # Ensemble methods (H4)
 │   ├── complementarity.py         # Agreement rate analysis for ensemble
@@ -205,9 +207,9 @@ Our system validates four hypotheses progressively:
 
 **H1 — Embedding Ceiling:** Sentence-T5-XXL achieves 71.0% dev accuracy, but dense embeddings plateau without explicit narrative reasoning.
 
-**H2 — Aspect-Grounded Prompting:** Adding annotation guidelines improves GPT-5-mini from ~70% to 77.4% (+7% gain).
+**H2 — Aspect-Grounded Prompting:** Explicitly grounding prompts in narrative dimensions improves GPT-5-mini from 70.5% to 72.5% (+2%), providing modest gains over zero-shot prompting.
 
-**H3 — Label Sensitivity:** Evaluative language in examples primes model reasoning; changing labels decreased accuracy by 5.6 points.
+**H3 — Label Sensitivity:** Demonstration labelling significantly influences model behaviour; using an evaluative label ("HARD EXAMPLE") improves accuracy by 3 points compared to a neutral label ("EXAMPLE").
 
 **H4 — Complementarity > Accuracy:** The 3-way ensemble outperforms individual systems by combining complementary error patterns; models disagree on 30-40% of instances.
 

@@ -110,276 +110,113 @@ ai-monitors-semeval2026-task4/
 
 ## Quick Start
 
-### Installation
-
 ```bash
-# Clone the repository
+# Clone and install
 git clone https://github.com/aimonitors25/narrative-similarity-semeval2026.git
 cd narrative-similarity-semeval2026
-
-# Install dependencies
 pip install -r requirements.txt
-```
 
-### Setup & Configuration
-
-**For Azure OpenAI (GPT-5-mini):**
-```bash
+# Setup environment (Azure OpenAI)
 export AZURE_OPENAI_API_KEY="your-api-key"
 export AZURE_OPENAI_ENDPOINT="your-endpoint"
 export AZURE_OPENAI_DEPLOYMENT="gpt-5-mini-2025-08-07"
 export AZURE_OPENAI_API_VERSION="2025-04-01-preview"
+
+# For local models: install Ollama, run: ollama serve
+# ollama pull deepseek-r1:32b llama3.1:8b qwen2.5vl:7b qwen3-embedding:8b
 ```
 
-**For Ollama Local Models:**
+## Usage
 
-1. [Install Ollama](https://ollama.com)
-2. Pull required models:
-   ```bash
-   ollama pull deepseek-r1:32b
-   ollama pull llama3.1:8b
-   ollama pull qwen2.5vl:7b
-   ollama pull qwen3-embedding:8b
-   ```
-3. Ensure Ollama is running: `ollama serve`
+### Recommended: Automated Experiments
 
-### Running Experiments
-
-#### Automated Experiment Runner (Recommended)
-
-Use `scripts/run_experiment.py` to run pre-configured experiments from `config.yaml`:
+Run pre-configured experiments from `config.yaml`:
 
 ```bash
-# List all available experiments
-python scripts/run_experiment.py --list
-
-# Run a specific experiment
-python scripts/run_experiment.py --experiment 02_t5_xxl_emb --data dev
-
-# Run with different dataset
-python scripts/run_experiment.py --experiment family3_kshot_gpt --data sample
-
-# Preview command without executing (dry run)
-python scripts/run_experiment.py --experiment family3_kshot_gpt --dry_run
-
-# Run all experiments on sample data (quick test)
-python scripts/run_experiment.py --experiment all --data sample
+python scripts/run_experiment.py --list                  # List all experiments
+python scripts/run_experiment.py --experiment 02_t5_xxl_emb --data dev  # Run single
+python scripts/run_experiment.py --experiment all --data sample          # Run all
 ```
 
-**Available experiments** (shown by `--list`):
-- **[H1] Embedding Baselines**: `00_story_emb`, `01_qwen3_emb`, `02_t5_xxl_emb`
-- **[H2-H3] LLM Experiments**: `family1_no_formal_grounding_gpt`, `family2_aspect_grounded_gpt`, `family3_kshot_gpt`, `family3_kshot_deepseek`, `family3_kshot_llama`, `family3_kshot_qwen`
+### Direct Script Usage
 
-#### Direct Command Usage (Advanced)
+For custom configurations, use core scripts:
 
-For manual control, run scripts directly:
-
-**Embedding Baselines (H1)**
+**Embeddings (H1):**
 ```bash
-# Run T5-XXL embedding on dev set
-python run_embedding.py \
-    --model t5-xxl \
-    --data data/Track_A/dev_triples.jsonl \
-    --output results/dev_t5_xxl.jsonl
-
-# Run Story-Emb on sample data
-python run_embedding.py \
-    --model story-emb \
-    --data data/Track_A/sample_triples.jsonl \
-    --output results/sample_story_emb.jsonl
+python run_embedding.py --model t5-xxl --data data/Track_A/dev_triples.jsonl --output results/dev_t5_xxl.jsonl
 ```
 
-**LLM Inference (H2 + H3)**
+**LLM Inference (H2-H3):**
 ```bash
-# Run GPT-5-mini with k-shot prompting
-python run_llm.py \
-    --model gpt-5-mini \
-    --data data/Track_A/dev_triples.jsonl \
-    --prompt prompts/family3_kshot.txt \
-    --output results/dev_gpt.jsonl
-
-# Run DeepSeek-R1 with aspect-grounded prompts
-python run_llm.py \
-    --model deepseek-r1:32b \
-    --data data/Track_A/dev_triples.jsonl \
-    --prompt prompts/family2_aspect_grounded.txt \
-    --output results/dev_deepseek.jsonl
+python run_llm.py --model gpt-5-mini --data data/Track_A/dev_triples.jsonl --prompt prompts/family3_kshot.txt --output results/dev_gpt.jsonl
 ```
 
-#### Ensemble Construction (H4)
-
+**Ensemble (H4):**
 ```bash
-# Analyze complementarity between models
-python ensemble/complementarity.py \
-    --baseline results/dev_t5_xxl.jsonl \
-    --llm results/dev_gpt.jsonl results/dev_deepseek.jsonl \
-    --data data/Track_A/dev_triples.jsonl
-
-# Create majority vote ensemble
-python ensemble/majority_vote.py \
-    --predictions results/dev_t5_xxl.jsonl results/dev_gpt.jsonl results/dev_deepseek.jsonl \
-    --output results/dev_ensemble.jsonl
+python ensemble/majority_vote.py --predictions results/dev_t5_xxl.jsonl results/dev_gpt.jsonl results/dev_deepseek.jsonl --output results/dev_ensemble.jsonl
 ```
 
----
-
-## Core Scripts
-
-### [run_embedding.py](run_embedding.py)
-Unified embedding inference script for all embedding models.
-
-**Usage:**
 ```bash
-python run_embedding.py --model <model_name> --data <input_file> --output <output_file>
-```
-
-**Supported Models:** `t5-xxl`, `story-emb`, `qwen3-embedding:8b`
-
-### [run_llm.py](run_llm.py)
-Unified LLM inference script for all language models.
-
-**Usage:**
-```bash
-python run_llm.py --model <model_name> --data <input_file> --prompt <prompt_file> --output <output_file>
-```
-
-**Supported Models:** `gpt-5-mini`, `deepseek-r1:32b`, `llama3.1:8b`, `qwen2.5vl:7b`
-
-### [scripts/run_experiment.py](scripts/run_experiment.py)
-Automation runner that executes pre-configured experiments from `config.yaml`.
-
-**Key Features:**
-- Lists all available experiments: `--list`
-- Runs single or multiple experiments: `--experiment <name>`
-- Supports different data splits: `--data dev|test|sample`
-- Dry-run mode to preview commands: `--dry_run`
-
-### [ensemble/majority_vote.py](ensemble/majority_vote.py)
-Constructs 3-way majority vote ensemble from individual model predictions.
-
-**Usage:**
-```bash
-python ensemble/majority_vote.py --predictions <file1> <file2> <file3> --output <output_file>
-```
-
-### [ensemble/complementarity.py](ensemble/complementarity.py)
-Analyzes agreement rates between models to identify complementarity.
-
-**Usage:**
-```bash
-python ensemble/complementarity.py --baseline <file1> --llm <file2> <file3> --data <data_file>
+python ensemble/complementarity.py --baseline results/dev_t5_xxl.jsonl --llm results/dev_gpt.jsonl results/dev_deepseek.jsonl --data data/Track_A/dev_triples.jsonl
 ```
 
 ---
 
 ## Configuration
 
-Edit `config.yaml` to configure your models and API keys. The file supports:
-- Azure OpenAI models (GPT-5-mini)
-- Ollama models (DeepSeek-R1, LLaMA, Qwen)
-- Hugging Face transformers (T5-XXL, Story-Emb)
+Edit `config.yaml` to configure models, API keys, and experiments. Supported:
+- **Embedding models:** `t5-xxl`, `story-emb`, `qwen3-embedding:8b`
+- **LLM models:** `gpt-5-mini`, `deepseek-r1:32b`, `llama3.1:8b`, `qwen2.5vl:7b`
+- **Prompts:** 3 families (zero-shot, aspect-grounded, k-shot) in `prompts/`
+- **Experiments:** 13 pre-configured runs (embeddings H1, LLM H2-H3, ensemble H4)
 
-### Models
-
-Seven models are supported across embedding and LLM categories:
-
-**Embedding Models** (for H1 baseline):
-- `sentence-t5-xxl` - Sentence Transformers T5-XXL (71.0% dev accuracy) ← Best embedding baseline
-- `story-emb` - Story-specific embedding model (55.0% dev accuracy)
-- `qwen3-embedding:8b` - Qwen3 embedding via Ollama (63.5% dev accuracy)
-
-**LLM Models** (for H2-H3 prompting):
-- `gpt-5-mini` - Azure OpenAI GPT-5-mini (requires API key)
-- `deepseek-r1:32b` - DeepSeek R1 via Ollama (best open-source reasoning)
-- `llama3.1:8b` - LLaMA 3.1 8B via Ollama
-- `qwen2.5vl:7b` - Qwen 2.5 Vision-Language 7B via Ollama
-
-### Prompts
-
-Three prompt families are included in `prompts/`:
-
-| Family | File | Description | Dev Accuracy |
-|--------|------|-------------|--------------|
-| Family 1 | `family1_no_formal_grounding.txt` | Zero-shot baseline (H2) | ~66% |
-| Family 2 | `family2_aspect_grounded.txt` | Aspect-grounded with annotation guidelines (H2) | ~70% |
-| Family 3 | `family3_kshot.txt` | K-shot with neutral examples + label sensitivity (H3) | ~77% |
-
-### Experiments
-
-Pre-configured experiments in `config.yaml` combine models with prompts:
-
-```yaml
-# Embedding Baselines (H1)
-00_story_emb           # Story-emb baseline
-01_qwen3_emb           # Qwen3-embedding baseline
-02_t5_xxl_emb          # T5-XXL baseline ← Best embedding
-
-# LLM Experiments (H2-H3)
-family1_no_formal_grounding_gpt      # GPT-5-mini with Family 1 prompt
-family2_aspect_grounded_gpt          # GPT-5-mini with Family 2 prompt
-family3_kshot_gpt                    # GPT-5-mini with Family 3 prompt
-family3_kshot_deepseek               # DeepSeek with Family 3 prompt
-family3_kshot_llama                  # LLaMA 3.1 with Family 3 prompt
-family3_kshot_qwen                   # Qwen 2.5 with Family 3 prompt
-
-# Ensemble (H4)
-ensemble_majority_vote               # 3-way majority vote
-```
-
-## Support & Questions
-
-For questions about the code, experiments, or methodology, please open an issue on GitHub or contact the AI-Monitors team.
+See `config.yaml` for full details and experiment definitions.
 
 ## Data Format
 
-**Input Format (dev/test sets)** — JSONL files:
-
+**Input (JSONL):**
 ```json
 {
-  "anchor_text": "The reference story...",
-  "text_a": "First candidate story...",
-  "text_b": "Second candidate story...",
-  "text_a_is_closer": true
+    "anchor_text": "...", 
+    "text_a": "...", 
+    "text_b": "...", 
+    "text_a_is_closer": true
 }
 ```
 
-**Output Format** — All predictions are returned as JSONL with added fields:
-
+**Output (JSONL):**
 ```json
 {
-  "anchor_text": "The reference story...",
-  "text_a": "First candidate story...",
-  "text_b": "Second candidate story...",
-  "text_a_is_closer": true,
-  "prediction": true,
-  "confidence": 0.92
+    "anchor_text": "...", 
+    "text_a": "...", 
+    "text_b": "...", 
+    "text_a_is_closer": true, 
+    "prediction": true, 
+    "confidence": 0.92
 }
 ```
 
 ---
 
-## Key Insights
+## Methodology
 
-**H1 — Embedding Ceiling**  
-Sentence-T5-XXL achieves 71.0% dev accuracy, but all embedding models plateau below structured LLM prompting, confirming that dense embeddings lack explicit narrative reasoning.
+Our system validates four hypotheses progressively:
 
-**H2 — Aspect-Grounded Prompting**  
-Adding official annotation guidelines to prompts improves GPT-5-mini from ~70% to 77.4% (+7% gain).
+**H1 — Embedding Ceiling:** Sentence-T5-XXL achieves 71.0% dev accuracy, but dense embeddings plateau without explicit narrative reasoning.
 
-**H3 — Label Sensitivity**  
-Changing example labels from `EXAMPLE` to `HARD EXAMPLE` decreases accuracy by 5.6 points, showing how evaluative language primes model reasoning.
+**H2 — Aspect-Grounded Prompting:** Adding annotation guidelines improves GPT-5-mini from ~70% to 77.4% (+7% gain).
 
-**H4 — Complementarity > Accuracy**  
-The 3-way ensemble outperforms individual systems by combining complementary strengths: disagreement on 30-40% of instances reveals where each model excels.
+**H3 — Label Sensitivity:** Evaluative language in examples primes model reasoning; changing labels decreased accuracy by 5.6 points.
 
-
-
-<!-- 
+**H4 — Complementarity > Accuracy:** The 3-way ensemble outperforms individual systems by combining complementary error patterns; models disagree on 30-40% of instances.
 
 ---
+
 ## Citation
 
-If you use this code in your research, please cite our SemEval-2026 submission:
+will be added soon...
+<!-- If you use this code in your research, please cite our SemEval-2026 submission:
 
 ```bibtex
 @inproceedings{ai-monitors-semeval2026,
@@ -390,9 +227,8 @@ If you use this code in your research, please cite our SemEval-2026 submission:
 }
 ``` -->
 
-
 ---
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE) for details.
